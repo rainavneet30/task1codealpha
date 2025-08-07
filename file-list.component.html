@@ -1,0 +1,781 @@
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  .gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .file-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .file-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .file-icon-pdf { background: linear-gradient(135deg, #FF6B6B, #FF5252); }
+  .file-icon-doc { background: linear-gradient(135deg, #4285F4, #1976D2); }
+  .file-icon-img { background: linear-gradient(135deg, #4CAF50, #2E7D32); }
+  .file-icon-video { background: linear-gradient(135deg, #FF9800, #F57C00); }
+  .file-icon-audio { background: linear-gradient(135deg, #9C27B0, #7B1FA2); }
+  .file-icon-code { background: linear-gradient(135deg, #607D8B, #455A64); }
+  .file-icon-archive { background: linear-gradient(135deg, #795548, #5D4037); }
+  .file-icon-default { background: linear-gradient(135deg, #9E9E9E, #757575); }
+
+  .dropdown-enter {
+    animation: dropdown-fade-in 0.2s ease-out;
+  }
+  
+  @keyframes dropdown-fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-enter {
+    animation: modal-fade-in 0.3s ease-out;
+  }
+  
+  @keyframes modal-fade-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* File hover tooltip styles */
+  .file-tooltip {
+    position: absolute;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    max-width: 300px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .file-tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .file-tooltip::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid rgba(0, 0, 0, 0.9);
+  }
+
+  /* Enhanced Action Button Styles */
+  .action-button {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .action-button:hover::before {
+    left: 100%;
+  }
+
+  .action-button .icon-wrapper {
+    position: relative;
+    z-index: 2;
+  }
+
+  .action-button .text-wrapper {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Download button specific styles */
+  .download-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .download-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.95));
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+  }
+
+  /* Upload button specific styles */
+  .upload-btn {
+    background: linear-gradient(135deg, #10b981, #14b8a6);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  }
+
+  .upload-btn:hover {
+    background: linear-gradient(135deg, #059669, #0d9488);
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.4);
+  }
+</style>
+
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Header -->
+    <div *ngIf="project" class="bg-white rounded-3xl shadow-xl border border-gray-100 mb-8 overflow-hidden">
+      <!-- Gradient Header Section -->
+      <div class="relative gradient-bg p-8 text-white">
+        <div class="absolute inset-0 bg-black opacity-10"></div>
+        
+        <!-- Action Buttons -->
+        <div class="absolute top-6 right-6 flex gap-4 z-10">
+          <!-- Download All Button -->
+          <button 
+            (click)="downloadAllAsZip()" 
+            title="Download All as ZIP"
+            class="group action-button download-btn flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 hover:scale-105">
+            <div class="icon-wrapper">
+              <i class="fas fa-download text-blue-600 group-hover:text-blue-700 transition-colors text-lg"></i>
+            </div>
+            <span class="text-wrapper text-sm font-semibold text-gray-800 group-hover:text-gray-900 transition-colors whitespace-nowrap">Download All</span>
+          </button>
+
+          <!-- Upload Files Button -->
+          <button 
+            (click)="triggerFileUpload()" 
+            title="Upload Files"
+            class="group action-button upload-btn flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 hover:scale-105">
+            <div class="icon-wrapper">
+              <i class="fas fa-upload text-white group-hover:text-emerald-50 transition-colors text-lg"></i>
+            </div>
+            <span class="text-wrapper text-sm font-semibold text-white group-hover:text-emerald-50 transition-colors whitespace-nowrap">Upload Files</span>
+          </button>
+        </div>
+
+        <!-- Project Info -->
+        <div class="relative pr-32">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+              <i class="fas fa-folder-open text-2xl text-white"></i>
+            </div>
+            <div>
+              <h1 class="text-3xl font-bold mb-1">{{ project.name }}</h1>
+              <!-- <p class="text-blue-100 font-medium">Project Workspace</p> -->
+            </div>
+          </div>
+          
+          <p class="text-blue-50 leading-relaxed mb-6 max-w-3xl opacity-90">{{ project.description }}</p>
+        </div>
+      </div>
+
+      <!-- Metadata Section -->
+      <div class="p-8 bg-gradient-to-br from-gray-50 to-white">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Tags -->
+          <div *ngIf="project.tags && project.tags.length > 0">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-tags text-blue-600 text-sm"></i>
+              </div>
+              <h3 class="font-bold text-gray-900">Tags</h3>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span 
+                *ngFor="let tag of project.tags" 
+                class="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold border border-blue-200 hover:bg-blue-100 transition-colors">
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Types -->
+          <div *ngIf="project.types && project.types.length > 0">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-layer-group text-emerald-600 text-sm"></i>
+              </div>
+              <h3 class="font-bold text-gray-900">Categories</h3>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span 
+                *ngFor="let type of project.types" 
+                class="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-sm font-semibold border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                {{ type }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div>
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-chart-bar text-purple-600 text-sm"></i>
+              </div>
+              <h3 class="font-bold text-gray-900">Statistics</h3>
+            </div>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                <span class="text-gray-600 font-medium">Size Limit</span>
+                <span class="font-bold text-gray-900">{{ project.size.number }} {{ project.size.unit }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Alert -->
+    <div *ngIf="errorMessage" class="mb-8">
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-lg">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-exclamation-triangle text-red-600"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-red-900 mb-2 text-lg">Error Occurred</h3>
+            <p class="text-red-700">{{ errorMessage }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-6 gap-4">
+        <!-- Left Section -->
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-folder text-white"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Files</h2>
+            <p class="text-gray-500 font-medium">{{ filteredFiles.length }} {{ filteredFiles.length === 1 ? 'item' : 'items' }}</p>
+          </div>
+        </div>
+        
+        <!-- Right Section -->
+        <div class="flex items-center gap-4 w-full lg:w-auto">
+          <!-- Search with Filters -->
+          <div class="flex items-center gap-3 flex-1 lg:flex-none">
+            <!-- Search Input -->
+            <div class="relative flex-1 lg:w-80">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-search text-gray-400"></i>
+              </div>
+              <input 
+                type="text" 
+                [(ngModel)]="searchQuery"
+                (input)="onSearchChange()"
+                placeholder="Search files..." 
+                class="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-gray-50 focus:bg-white">
+            </div>
+
+            <!-- Filter Dropdown -->
+            <div class="relative filter-dropdown">
+              <button 
+                (click)="toggleFilterDropdown()"
+                [class]="selectedFilter !== 'all' ? 'border-blue-300 bg-blue-50' : ''"
+                class="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-200 min-w-[120px] relative">
+                <i class="fas fa-filter text-gray-500"></i>
+                <span>{{ getFilterDisplayName() }}</span>
+                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200" 
+                   [class.rotate-180]="showFilterDropdown"></i>
+                <!-- Active filter indicator -->
+                <div *ngIf="selectedFilter !== 'all'" 
+                     class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+              </button>
+
+              <!-- Filter Options -->
+              <div *ngIf="showFilterDropdown" 
+                   class="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 py-2 dropdown-enter">
+                <!-- All Files Option -->
+                <button 
+                  (click)="selectFilter('all')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                  <i class="fas fa-folder text-blue-500 w-4"></i>
+                  All Files
+                </button>
+                
+                <!-- Dynamic File Type Options -->
+                <button 
+                  *ngFor="let fileType of getAvailableFileTypes()"
+                  (click)="selectFilter(fileType)"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                  <i [class]="getFilterIcon(fileType) + ' w-4'"></i>
+                  {{ getFilterDisplayText(fileType) }}
+                </button>
+                
+                <!-- No file types available message -->
+                <div *ngIf="getAvailableFileTypes().length === 0" 
+                     class="px-4 py-3 text-sm text-gray-500 text-center">
+                  No file types configured
+                </div>
+              </div>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="relative sort-dropdown">
+              <button 
+                (click)="toggleSortDropdown()"
+                [class]="selectedSort !== 'name-asc' ? 'border-purple-300 bg-purple-50' : ''"
+                class="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-200 min-w-[120px] relative">
+                <i class="fas fa-sort text-gray-500"></i>
+                <span>{{ getSortDisplayName() }}</span>
+                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200" 
+                   [class.rotate-180]="showSortDropdown"></i>
+                <!-- Active sort indicator -->
+                <div *ngIf="selectedSort !== 'name-asc'" 
+                     class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full"></div>
+              </button>
+
+              <!-- Sort Options -->
+              <div *ngIf="showSortDropdown" 
+                   class="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 py-2 dropdown-enter">
+                <button 
+                  (click)="selectSort('name-asc')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                  <i class="fas fa-sort-alpha-down text-blue-500 w-4"></i>
+                  Name (A-Z)
+                </button>
+                <button 
+                  (click)="selectSort('name-desc')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                  <i class="fas fa-sort-alpha-up text-blue-500 w-4"></i>
+                  Name (Z-A)
+                </button>
+                <button 
+                  (click)="selectSort('size-asc')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all">
+                  <i class="fas fa-sort-amount-down text-green-500 w-4"></i>
+                  Size (Small to Large)
+                </button>
+                <button 
+                  (click)="selectSort('size-desc')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all">
+                  <i class="fas fa-sort-amount-up text-green-500 w-4"></i>
+                  Size (Large to Small)
+                </button>
+                <button 
+                  (click)="selectSort('date-asc')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all">
+                  <i class="fas fa-calendar-alt text-purple-500 w-4"></i>
+                  Date (Oldest First)
+                </button>
+                <button 
+                  (click)="selectSort('date-desc')"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all">
+                  <i class="fas fa-calendar-alt text-purple-500 w-4"></i>
+                  Date (Newest First)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- View Toggle -->
+          <div class="flex items-center bg-gray-100 p-1.5 rounded-xl border border-gray-200">
+            <button 
+              (click)="isGridView = true"
+              [class]="isGridView ? 'bg-white text-gray-900 shadow-md' : 'text-gray-600 hover:text-gray-900'"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200">
+              <i class="fas fa-th"></i>
+              <span class="hidden sm:inline">Grid</span>
+            </button>
+            <button 
+              (click)="isGridView = false"
+              [class]="!isGridView ? 'bg-white text-gray-900 shadow-md' : 'text-gray-600 hover:text-gray-900'"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200">
+              <i class="fas fa-list"></i>
+              <span class="hidden sm:inline">List</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files Container -->
+    <div class="files-container">
+      <!-- Grid View -->
+      <div *ngIf="isGridView && filteredFiles.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div 
+          *ngFor="let file of filteredFiles"
+          class="group relative bg-white border border-gray-200 rounded-2xl p-6 file-card-hover"
+          (mouseenter)="showFileTooltip(file, $event)"
+          (mouseleave)="hideFileTooltip()">
+          
+          <!-- Menu Button -->
+          <button 
+            (click)="toggleMenu(file.id, $event)"
+            class="menu-button absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:scale-110">
+            <i class="fas fa-ellipsis-v text-gray-600 text-sm"></i>
+          </button>
+
+          <!-- File Icon -->
+          <div class="flex justify-center mb-4">
+            <div class="relative">
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg {{ getFileIconClass(file.name) }}">
+                <i class="{{ getFileIconName(file.name) }} text-white text-2xl"></i>
+              </div>
+              <div *ngIf="file.has_versions" class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                <i class="fas fa-history text-white text-xs"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- File Info -->
+          <div class="text-center space-y-2">
+            <h3 class="text-sm font-bold text-gray-900 truncate" [title]="file.name">
+              {{ file.name }}
+            </h3>
+            <p class="text-xs text-gray-500 font-semibold">{{ formatSize(file.size) }}</p>
+            <div *ngIf="file.has_versions" class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-semibold">
+              <i class="fas fa-code-branch"></i>
+              Versioned
+            </div>
+          </div>
+
+          <!-- Dropdown Menu -->
+          <div 
+            *ngIf="activeMenuFileId === file.id"
+            class="dropdown-menu absolute top-14 right-4 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 w-48 py-2 dropdown-enter">
+            <button 
+              (click)="downloadFile(file); $event.stopPropagation()" 
+              class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all">
+              <i class="fas fa-download text-blue-500 w-4"></i>
+              Download
+            </button>
+            <button 
+              (click)="replaceFile(file); $event.stopPropagation()" 
+              class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+              <i class="fas fa-upload text-emerald-500 w-4"></i>
+              Replace
+            </button>
+            <button 
+              *ngIf="file.has_versions"
+              (click)="viewVersions(file); $event.stopPropagation()" 
+              class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all">
+              <i class="fas fa-history text-purple-500 w-4"></i>
+              View Versions
+            </button>
+            <hr class="my-1 border-gray-100">
+            <button 
+              (click)="deleteFile(file); $event.stopPropagation()" 
+              class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-all">
+              <i class="fas fa-trash text-red-500 w-4"></i>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div *ngIf="!isGridView && filteredFiles.length > 0" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <!-- Table Header -->
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 border-b border-gray-200">
+          <div class="grid grid-cols-12 gap-4 items-center">
+            <div class="col-span-6 text-xs font-bold text-gray-600 uppercase tracking-wider">NAME</div>
+            <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">SIZE</div>
+            <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">TYPE</div>
+            <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-center">ACTIONS</div>
+          </div>
+        </div>
+
+        <!-- File Rows -->
+        <div class="divide-y divide-gray-50">
+          <div 
+            *ngFor="let file of filteredFiles; let i = index" 
+            class="group hover:bg-gray-50 transition-all duration-200 relative"
+            (mouseenter)="showFileTooltip(file, $event)"
+            (mouseleave)="hideFileTooltip()">
+            
+            <div class="px-8 py-6">
+              <div class="grid grid-cols-12 gap-6 items-start">
+                <!-- File Name & Icon -->
+                <div class="col-span-6 flex items-center gap-4">
+                  <div class="relative flex-shrink-0">
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center shadow-md {{ getFileIconClass(file.name) }}">
+                      <i class="{{ getFileIconName(file.name) }} text-white text-lg"></i>
+                    </div>
+                    <div *ngIf="file.has_versions" class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
+                      <i class="fas fa-history text-white text-xs"></i>
+                    </div>
+                  </div>
+                  <div class="min-w-0 flex-1 pr-4">
+                    <h3 class="text-sm font-bold text-gray-900 mb-1 break-words">{{ file.name }}</h3>
+                    <div *ngIf="file.has_versions" class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full font-semibold">
+                      <i class="fas fa-code-branch"></i>
+                      Versioned
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Size -->
+                <div class="col-span-2">
+                  <span class="text-sm font-bold text-gray-900">{{ formatSize(file.size) }}</span>
+                </div>
+
+                <!-- Type -->
+                <div class="col-span-2">
+                  <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-full {{ getFileTypeClass(file.name) }}">
+                    {{ getFileType(file.name) }}
+                  </span>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-span-2 flex items-center justify-center">
+                  <button 
+                    (click)="toggleMenu(file.id, $event)"
+                    class="menu-button w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center hover:scale-110 relative z-10">
+                    <i class="fas fa-ellipsis-v text-gray-600 text-sm"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dropdown Menu for List View - Fixed positioning -->
+            <div 
+              *ngIf="activeMenuFileId === file.id"
+              class="dropdown-menu absolute right-8 top-8 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 w-48 py-2 dropdown-enter">
+              <button 
+                (click)="downloadFile(file); $event.stopPropagation()" 
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                <i class="fas fa-download text-blue-500 w-4"></i>
+                Download
+              </button>
+              <button 
+                (click)="replaceFile(file); $event.stopPropagation()" 
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+                <i class="fas fa-upload text-emerald-500 w-4"></i>
+                Replace
+              </button>
+              <button 
+                *ngIf="file.has_versions"
+                (click)="viewVersions(file); $event.stopPropagation()" 
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all">
+                <i class="fas fa-history text-purple-500 w-4"></i>
+                View Versions
+              </button>
+              <hr class="my-1 border-gray-100">
+              <button 
+                (click)="deleteFile(file); $event.stopPropagation()" 
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-all">
+                <i class="fas fa-trash text-red-500 w-4"></i>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredFiles.length === 0 && files.length === 0" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-16 text-center">
+        <div class="max-w-md mx-auto">
+          <div class="w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-folder-plus text-4xl bg-gradient-to-br from-blue-500 to-purple-600 bg-clip-text text-transparent"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-4">No files yet</h3>
+          <p class="text-gray-600 mb-8 leading-relaxed">Start uploading your files here.</p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              (click)="triggerFileUpload()"
+              class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+              <i class="fas fa-upload"></i>
+              Upload Files
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Search Results State -->
+      <div *ngIf="filteredFiles.length === 0 && files.length > 0" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-16 text-center">
+        <div class="max-w-md mx-auto">
+          <div class="w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-3xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-search text-4xl bg-gradient-to-br from-yellow-500 to-orange-600 bg-clip-text text-transparent"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-4">No files found</h3>
+          <p class="text-gray-600 mb-8 leading-relaxed">No files match your current filters.</p>
+          <button 
+            (click)="clearAllFilters()"
+            class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+            <i class="fas fa-times"></i>
+            Clear Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Versions Modal -->
+<div 
+  *ngIf="showVersionsModal" 
+  class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden modal-enter">
+    
+    <!-- Modal Header -->
+    <div class="gradient-bg p-8 text-white relative">
+      <div class="absolute inset-0 bg-black opacity-20"></div>
+      <div class="relative flex items-center">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+            <i class="fas fa-history text-2xl text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold mb-1">Version History</h3>
+            <p class="text-blue-100 opacity-90">{{ selectedFileName }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="p-8 max-h-96 overflow-y-auto">
+      <div *ngIf="fileVersions.length === 0" class="text-center py-16">
+        <div class="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-3xl flex items-center justify-center">
+          <i class="fas fa-clock text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">No Versions Available</h3>
+        <p class="text-gray-600">This file doesn't have any version history yet.</p>
+      </div>
+      
+      <div class="space-y-4">
+        <div *ngFor="let version of fileVersions; let i = index" 
+             class="flex items-center justify-between p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
+                 [class]="version.version === 1 ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-purple-500 to-indigo-600'">
+              <span class="text-white font-bold text-sm" *ngIf="version.version !== 1">v{{ version.version }}</span>
+              <span class="text-white font-bold text-sm" *ngIf="version.version === 1">Original</span>
+            </div>
+            <div>
+              <h4 class="font-bold text-gray-900 mb-1">
+                {{ version.stored_name || version.file_name }}
+              </h4>
+              <p class="text-sm text-gray-600" *ngIf="version.version === 1">Original File (Version 1)</p>
+              <p class="text-sm text-gray-600" *ngIf="version.version !== 1">Version {{ version.version }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              (click)="downloadFile(version); $event.stopPropagation()"
+              class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all duration-300 hover:scale-105">
+              <i class="fas fa-download"></i>
+              Download
+            </button>
+            <button 
+              *ngIf="version.version !== 1"
+              (click)="confirmDeleteVersion(version); $event.stopPropagation()" 
+              class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all duration-300 hover:scale-105">
+              <i class="fas fa-trash"></i>
+              Delete Version
+            </button>
+            <button 
+              *ngIf="version.version === 1"
+              disabled
+              class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-gray-400 bg-gray-100 rounded-xl cursor-not-allowed">
+              <i class="fas fa-lock"></i>
+              Original File
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex justify-end gap-4 p-8 border-t border-gray-100 bg-gradient-to-br from-gray-50 to-white">
+      <button 
+        (click)="closeVersionsModal(); $event.stopPropagation()" 
+        class="px-8 py-3 text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-300 hover:scale-105">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div 
+  *ngIf="showDeleteModal" 
+  class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full modal-enter">
+    
+    <!-- Modal Header -->
+    <div class="bg-gradient-to-r from-red-500 to-red-600 p-8 text-white relative">
+      <div class="absolute inset-0 bg-black opacity-20"></div>
+      <div class="relative flex items-center">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+            <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold mb-1">Confirm Delete</h3>
+            <p class="text-red-100 opacity-90">{{ deleteModalTitle }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="p-8">
+      <div class="text-center">
+        <div class="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-3xl flex items-center justify-center">
+          <i class="fas fa-trash text-3xl text-red-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">{{ deleteModalMessage }}</h3>
+        <p class="text-gray-600 mb-8">This action cannot be undone. Are you sure you want to proceed?</p>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex justify-end gap-4 p-8 border-t border-gray-100 bg-gradient-to-br from-gray-50 to-white">
+      <button 
+        (click)="cancelDelete(); $event.stopPropagation()" 
+        class="px-8 py-3 text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-300 hover:scale-105">
+        Cancel
+      </button>
+      <button 
+        (click)="confirmDelete(); $event.stopPropagation()" 
+        class="px-8 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg">
+        <i class="fas fa-trash mr-2"></i>
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- File Tooltip -->
+<div 
+  *ngIf="showTooltip" 
+  class="file-tooltip show"
+  [style.left.px]="tooltipX"
+  [style.top.px]="tooltipY">
+  <div style="white-space: pre-line;">{{ tooltipContent }}</div>
+</div>
